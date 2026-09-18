@@ -2,13 +2,24 @@
 
 The examples assume that commands run from the repository root.
 
+For the self-contained installed skill:
+
+```powershell
+$skillRoot = '<path containing SKILL.md>'
+$ieeeSpider = Join-Path $skillRoot 'scripts\ieee-spider.ps1'
+```
+
+Use `& $ieeeSpider ...` for all CLI examples below. The wrapper locates the
+embedded executable and uses `$HOME\.ieee-spider` unless `IEEE_SPIDER_HOME` is
+set.
+
 ## Human-Only Commands
 
 Do not run these unless the user explicitly says a human is present and ready:
 
 ```powershell
-uv run ieee-spider login
-uv run ieee-spider session
+& $ieeeSpider login
+& $ieeeSpider session
 ```
 
 `login` is the only command that opens visible Edge. It waits for SSO/MFA.
@@ -34,7 +45,7 @@ Agent task. Having
 ## Agent Session Check
 
 ```powershell
-uv run ieee-spider auth-check
+& $ieeeSpider auth-check
 ```
 
 Continue only when `authenticated: true`. The command may use the saved
@@ -47,7 +58,7 @@ Generic search prefers the authenticated IEEE Xplore browser path. There is no
 metadata-provider fallback in the maintained CLI.
 
 ```powershell
-uv run ieee-spider search `
+& $ieeeSpider search `
   --query "low altitude networks" `
   --from-year 2025 `
   --to-year 2026 `
@@ -75,8 +86,8 @@ This is only for the five authors preconfigured in `config/authors.toml`.
 It also uses authenticated IEEE Xplore and does not fall back.
 
 ```powershell
-uv run ieee-spider fetch --max-results 200
-uv run ieee-spider fetch --author nan-cheng
+& $ieeeSpider fetch --max-results 200
+& $ieeeSpider fetch --author example-author
 ```
 
 ## Download
@@ -90,7 +101,7 @@ work, not guaranteed CLI behavior.
 Public open-access first:
 
 ```powershell
-uv run ieee-spider download `
+& $ieeeSpider download `
   --input data\jobs\low-altitude\manifest.jsonl `
   --mode oa `
   --limit 5 `
@@ -100,7 +111,7 @@ uv run ieee-spider download `
 Authorized session:
 
 ```powershell
-uv run ieee-spider download `
+& $ieeeSpider download `
   --input data\jobs\low-altitude\manifest.jsonl `
   --mode authorized `
   --limit 5 `
@@ -112,7 +123,7 @@ uv run ieee-spider download `
 Open access plus authorized access:
 
 ```powershell
-uv run ieee-spider download `
+& $ieeeSpider download `
   --input data\jobs\low-altitude\manifest.jsonl `
   --mode both `
   --limit 5 `
@@ -138,7 +149,7 @@ editing.
 Select specific records:
 
 ```powershell
-uv run ieee-spider download `
+& $ieeeSpider download `
   --input data\jobs\low-altitude\manifest.jsonl `
   --record-id "ieee:11447568" `
   --mode authorized
@@ -147,7 +158,7 @@ uv run ieee-spider download `
 Preview without downloading:
 
 ```powershell
-uv run ieee-spider download `
+& $ieeeSpider download `
   --input data\jobs\low-altitude\manifest.jsonl `
   --mode both `
   --limit 5 `
@@ -167,7 +178,7 @@ uv run ieee-spider download `
 Prefer the serial CLI command over writing a new browser loop for each request:
 
 ```powershell
-uv run ieee-spider enrich `
+& $ieeeSpider enrich `
   --input data\jobs\low-altitude\manifest.jsonl `
   --output data\jobs\low-altitude\abstracts.jsonl
 ```
@@ -258,8 +269,8 @@ input-driven and does not pop a window. The process is tied to its terminal:
 closing the terminal stops keepalive.
 
 ```powershell
-uv run ieee-spider session
-uv run ieee-spider session --once
+& $ieeeSpider session
+& $ieeeSpider session --once
 ```
 
 Authentication failure exits with an error. It never triggers login.

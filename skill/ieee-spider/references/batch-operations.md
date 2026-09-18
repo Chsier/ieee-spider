@@ -80,7 +80,7 @@ final response by its `%PDF-` header; do not require a `.pdf` suffix.
 Run from the project root and provide the authoritative search manifest:
 
 ```powershell
-uv run ieee-spider enrich `
+& $ieeeSpider enrich `
   --input data\jobs\<job-name>\manifest.jsonl `
   --output data\jobs\<job-name>\abstracts.jsonl
 ```
@@ -103,13 +103,13 @@ Practical options:
 
 ```powershell
 # Inspect pending work without opening a browser.
-uv run ieee-spider enrich `
+& $ieeeSpider enrich `
   --input data\jobs\<job-name>\manifest.jsonl `
   --output data\jobs\<job-name>\abstracts.jsonl `
   --dry-run
 
 # Retry records already marked failed.
-uv run ieee-spider enrich `
+& $ieeeSpider enrich `
   --input data\jobs\<job-name>\manifest.jsonl `
   --output data\jobs\<job-name>\abstracts.jsonl `
   --retry-failed
@@ -144,7 +144,7 @@ For authentication failure:
 
 1. Stop the batch when the page redirects to sign-in, returns 401/403, or
    `auth-check` reports `authenticated: false`.
-2. Ask the human to run `uv run ieee-spider login` and complete the
+2. Ask the human to run `& $ieeeSpider login` and complete the
    institutional SSO flow in the popup, not merely reload an existing personal
    or anonymous IEEE page.
 3. Resume the same job after login; do not recreate the manifest.
@@ -165,11 +165,11 @@ Use this procedure when switching institutions, clearing a stale entitlement
 cache, or validating the first-use gate:
 
 1. Stop every `login`, `session`, search, enrichment, and download process.
-2. Move `data\auth` to a timestamped quarantine path such as
-   `data\auth.revoked-YYYYMMDD-HHMMSS`; do not keep the active path.
-3. Run `uv run ieee-spider auth-check` before logging in. It must fail with
+2. Move `$HOME\.ieee-spider\data\auth` to a timestamped quarantine path such
+   as `auth.revoked-YYYYMMDD-HHMMSS`; do not keep the active path.
+3. Run `& $ieeeSpider auth-check` before logging in. It must fail with
    `Auth state not found`.
-4. Ask the human to run `uv run ieee-spider login` and complete institutional
+4. Ask the human to run `& $ieeeSpider login` and complete institutional
    SSO in the visible browser.
 5. Run `auth-check` in two separate processes. Both must report
    `authenticated: true`.

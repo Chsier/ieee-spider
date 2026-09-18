@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,17 @@ class AppConfig:
 
 
 def project_root() -> Path:
+    configured = os.getenv("IEEE_SPIDER_HOME")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    if getattr(sys, "frozen", False):
+        local_app_data = os.getenv("LOCALAPPDATA")
+        base = (
+            Path(local_app_data)
+            if local_app_data
+            else Path.home() / ".local" / "share"
+        )
+        return (base / "ieee-spider").resolve()
     return Path(__file__).resolve().parents[2]
 
 

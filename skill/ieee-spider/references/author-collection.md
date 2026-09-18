@@ -89,7 +89,7 @@ statistics, and DOCX outputs internally consistent.
 4. Enrich the deduplicated union once:
 
    ```powershell
-   uv run ieee-spider enrich `
+   & $ieeeSpider enrich `
      --input data\jobs\<collection-slug>\_shared\manifest-union.jsonl `
      --output data\jobs\<collection-slug>\_shared\abstracts-union.jsonl
    ```

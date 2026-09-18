@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from ieee_spider.auth import load_login_config
-from ieee_spider.config import load_config
+from ieee_spider.config import load_config, project_root
 
 
 def test_load_default_config() -> None:
@@ -38,3 +38,12 @@ def test_login_config_loads_script_friendly_defaults() -> None:
     assert config.mode == "manual"
     assert config.auth_file.is_absolute()
     assert config.keepalive_interval_seconds == 240
+
+
+def test_project_root_honors_environment_override(
+    tmp_path: Path,
+    monkeypatch: object,
+) -> None:
+    monkeypatch.setenv("IEEE_SPIDER_HOME", str(tmp_path))  # type: ignore[attr-defined]
+
+    assert project_root() == tmp_path.resolve()

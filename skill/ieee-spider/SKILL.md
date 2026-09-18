@@ -5,9 +5,21 @@ description: Maintain an authenticated IEEE Xplore browser channel and provide b
 
 # IEEE Spider
 
-Locate the actual checkout before running commands. When this skill is installed
-from the repository, its scripts live under `skill\ieee-spider\scripts` in the
-checkout or under the installed skill directory.
+This skill is self-contained. Use the embedded Windows runtime unless you are
+developing the source repository:
+
+```powershell
+$skillRoot = '<path containing this SKILL.md>'
+$ieeeSpider = Join-Path $skillRoot 'scripts\ieee-spider.ps1'
+```
+
+The wrapper locates `bin\ieee-spider.exe`, creates the runtime workspace, and
+forwards all CLI arguments. The default workspace is `$HOME\.ieee-spider`.
+Set `IEEE_SPIDER_HOME` before invoking the wrapper to use a different
+persistent workspace.
+
+If `bin\ieee-spider.exe` is absent in a development checkout, use
+`uv run ieee-spider` as the fallback.
 
 The Agent controls search, manifest generation, downloading, retries, and
 reporting. A human controls visible login, institutional SSO, MFA, and CAPTCHA.
@@ -70,7 +82,7 @@ The browser profile must have been authenticated by a human at least once. If
 exist, stop and request:
 
 ```powershell
-uv run ieee-spider login
+& $ieeeSpider login
 ```
 
 The Agent must never create the session, fill credentials, handle MFA, or
@@ -102,7 +114,8 @@ These defaults reflect methods that currently work reliably. They may be
 replaced by a minimal, tested alternative when IEEE or the local environment
 changes.
 
-- Prefer running commands from the project root with `uv run ieee-spider`.
+- Prefer the embedded runtime through `scripts\ieee-spider.ps1`; use
+  `uv run ieee-spider` only when developing from source.
 - Prefer keeping `login` and the long-running `session` command
   human-controlled.
 - Prefer one off-screen background Edge process whose lifetime is tied to its
@@ -136,7 +149,7 @@ must remain script-generated and internally consistent.
 1. Check the human-managed session:
 
    ```powershell
-   uv run ieee-spider auth-check
+   & $ieeeSpider auth-check
    ```
 
 2. Continue only when the output contains `authenticated: true`.
@@ -144,7 +157,7 @@ must remain script-generated and internally consistent.
 3. Run a generic authenticated Xplore search:
 
    ```powershell
-   uv run ieee-spider search `
+   & $ieeeSpider search `
      --query "<query>" `
      --from-year <year> `
      --to-year <year> `
@@ -161,7 +174,7 @@ must remain script-generated and internally consistent.
    helper described in [references/batch-operations.md](references/batch-operations.md):
 
    ```powershell
-   uv run ieee-spider enrich `
+   & $ieeeSpider enrich `
      --input data\jobs\<job-name>\manifest.jsonl `
      --output data\jobs\<job-name>\abstracts.jsonl
    ```
@@ -185,7 +198,7 @@ must remain script-generated and internally consistent.
 7. Download selected records:
 
    ```powershell
-  uv run ieee-spider download `
+  & $ieeeSpider download `
     --input data\jobs\<job-name>\manifest.jsonl `
     --mode both `
     --limit 5 `
@@ -224,14 +237,14 @@ If `auth-check` is false, or a command exits with an authentication error,
 stop immediately and ask the human to run:
 
 ```powershell
-uv run ieee-spider login
+& $ieeeSpider login
 ```
 
 If a durable background session is needed, the human may leave this running in
 its own terminal. This is not an Agent command:
 
 ```powershell
-uv run ieee-spider session
+& $ieeeSpider session
 ```
 
 The background Edge exits with that terminal. When authentication expires,

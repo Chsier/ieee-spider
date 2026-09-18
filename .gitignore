@@ -11,6 +11,9 @@ htmlcov/
 data/
 downloads/
 output/
+dist/
+*.build/
+*.onefile-build/
 *.pdf
 *.docx
 *.bib

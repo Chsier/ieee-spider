@@ -14,6 +14,7 @@ ieee-spider = "ieee_spider.cli:main"
 
 [dependency-groups]
 dev = [
+    "nuitka==4.1.3",
     "pytest>=8.4.1",
 ]
 

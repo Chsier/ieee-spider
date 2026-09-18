@@ -96,6 +96,41 @@ uv run ieee-spider --help
 Windows is the primary validated platform. The Python package and CLI remain
 portable to environments supported by Playwright and Python 3.12.
 
+### Embedded Skill Runtime
+
+The reusable skill includes a source-free Windows executable:
+
+```text
+skill/ieee-spider/
+|-- bin/
+|   |-- ieee-spider.exe
+|   `-- runtime-manifest.json
+|-- scripts/
+|   `-- ieee-spider.ps1
+`-- assets/default-config/
+```
+
+Use the wrapper from any working directory:
+
+```powershell
+& .\skill\ieee-spider\scripts\ieee-spider.ps1 auth-check
+```
+
+The wrapper locates the embedded executable, creates `$HOME\.ieee-spider` if
+needed, bootstraps default configuration, and forwards all CLI arguments. Set
+`IEEE_SPIDER_HOME` to use a different persistent workspace.
+
+Rebuild the executable with the local Nuitka installation and shared compiler
+cache:
+
+```powershell
+uv run python build_skill_exe.py
+```
+
+The executable includes the Playwright Python package and its driver. It uses
+the locally installed Microsoft Edge channel, so no browser download is
+required at runtime.
+
 ## Authentication
 
 Configuration lives in [`config/login.toml`](config/login.toml). The default
@@ -291,8 +326,8 @@ uv run pytest -q
 Current suite:
 
 ```text
-..................................... [100%]
-37 passed
+...................................... [100%]
+38 passed
 ```
 
 GitHub Actions runs the same tests on pushes and pull requests.

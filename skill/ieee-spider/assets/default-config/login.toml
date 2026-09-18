@@ -1,0 +1,15 @@
+[login]
+url = "https://ieeexplore.ieee.org/"
+browser = "edge"
+auth_file = "data/auth/ieee-storage-state.json"
+mode = "manual"
+username = ""
+username_env = "IEEE_USERNAME"
+password_env = "IEEE_PASSWORD"
+username_selector = ""
+password_selector = ""
+remember_me_selector = ""
+submit_selector = ""
+wait_after_submit_ms = 1500
+keep_open = false
+keepalive_interval_seconds = 240
