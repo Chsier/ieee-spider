@@ -1,0 +1,12 @@
+from_year = 2020
+to_year = 2026
+
+[[authors]]
+name = "Example Author"
+slug = "example-author"
+affiliation = "Example University"
+orcid = ""
+research_areas = [
+    "wireless networks",
+    "network security",
+]

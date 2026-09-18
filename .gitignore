@@ -1,0 +1,31 @@
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime data, credentials, browser state, and generated documents
+data/
+downloads/
+output/
+*.pdf
+*.docx
+*.bib
+*.sqlite3
+
+# Local-only configuration
+config/authors.local.toml
+config/login.local.toml
+.env
+.env.*
+
+# Editor and operating-system files
+.idea/
+.vscode/
+*.code-workspace
+.DS_Store
+Thumbs.db
+Desktop.ini

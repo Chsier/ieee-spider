@@ -1,0 +1,27 @@
+[login]
+url = "https://ieeexplore.ieee.org/"
+browser = "edge"
+auth_file = "data/auth/ieee-storage-state.json"
+
+# Recommended: complete institutional SSO, username/password and MFA in the
+# visible browser, then press Enter in the terminal.
+mode = "manual"
+
+# Optional form automation. Keep the password out of this file. Set:
+#   $env:IEEE_PASSWORD = "..."
+username = ""
+username_env = "IEEE_USERNAME"
+password_env = "IEEE_PASSWORD"
+username_selector = ""
+password_selector = ""
+remember_me_selector = ""
+submit_selector = ""
+wait_after_submit_ms = 1500
+
+# Set true if you want the login command to remain open until you close Edge.
+keep_open = false
+
+# Session keepalive interval used by: ieee-spider session
+# All non-login commands use one off-screen background Edge process. They never
+# open a visible page. The process ends with its terminal.
+keepalive_interval_seconds = 240
