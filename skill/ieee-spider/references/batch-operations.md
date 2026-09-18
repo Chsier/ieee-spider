@@ -159,6 +159,26 @@ If a later `auth-check` fails, it must not replace the saved state with the
 anonymous current context; otherwise a valid human login would be lost on the
 next command.
 
+### Resetting Stale Authentication State
+
+Use this procedure when switching institutions, clearing a stale entitlement
+cache, or validating the first-use gate:
+
+1. Stop every `login`, `session`, search, enrichment, and download process.
+2. Move `data\auth` to a timestamped quarantine path such as
+   `data\auth.revoked-YYYYMMDD-HHMMSS`; do not keep the active path.
+3. Run `uv run ieee-spider auth-check` before logging in. It must fail with
+   `Auth state not found`.
+4. Ask the human to run `uv run ieee-spider login` and complete institutional
+   SSO in the visible browser.
+5. Run `auth-check` in two separate processes. Both must report
+   `authenticated: true`.
+6. Only then resume search or downloads.
+
+The quarantine directory is ignored by Git. Delete it according to the local
+security policy after the new session is confirmed, or retain it temporarily
+for rollback.
+
 ## Abstract Extraction Defaults and Output Contract
 
 Prefer the authenticated IEEE detail page with these selectors and rules:

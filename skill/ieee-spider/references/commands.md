@@ -22,6 +22,11 @@ Saved cookies and localStorage are injected into subsequent persistent
 browser launches. A failed `auth-check` must not overwrite the saved session
 file.
 
+To reset stale authentication state safely, stop all browser commands and move
+`data\auth` to a timestamped quarantine directory. Run `auth-check` before
+logging in and require `Auth state not found`; then log in and verify two
+separate `auth-check` runs.
+
 At least one human `login` is required in the current implementation before any
 Agent task. Having
 `config/login.toml` or credentials configured does not satisfy this gate.
