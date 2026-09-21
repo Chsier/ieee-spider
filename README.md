@@ -62,6 +62,7 @@ CLI operations, so an agent can inspect and resume each stage.
 | Abstract and citation enrichment | `ieee-spider enrich` | Resumable JSONL |
 | Venue and citation report | `build_paper_statistics.py` | Fixed statistics JSON |
 | OA and authorized PDF downloads | `ieee-spider download` | PDFs plus download manifest |
+| Red-number subset export | `organize_red_downloads.py` | Fixed red-selection JSONL plus copied PDFs |
 
 ## Design Guarantees
 
@@ -237,6 +238,17 @@ uv run python skill/ieee-spider/scripts/build_paper_statistics.py `
 
 The report includes per-paper metrics, venue aggregates, citation coverage,
 and a Top Cited ranking.
+
+For author collections whose DOCX summaries use red-highlighted entry numbers,
+copy the marked subset after the full download completes:
+
+```powershell
+uv run python skill/ieee-spider/scripts/organize_red_downloads.py `
+  --author-dir data\jobs\<collection>\<author>
+```
+
+The script matches red numbers by title, reads the full-download manifest, and
+writes `downloads\red\red_selection.jsonl`.
 
 ## PDF Downloads
 
