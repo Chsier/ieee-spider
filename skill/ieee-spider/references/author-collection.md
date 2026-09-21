@@ -58,6 +58,100 @@ author workflow requires a different parser, query construction, or file
 split, make the smallest reusable change and keep the manifest, enrichment,
 statistics, and DOCX outputs internally consistent.
 
+## Per-Author Library Layout
+
+After selection and downloading, the `per-author` collection may be organized
+as a stable paper library:
+
+```text
+data/jobs/per-author/<author-slug>/
+|-- manifest-<N>.jsonl
+|-- manifest-<N>.csv
+|-- abstracts-<N>.jsonl
+|-- statistics.json
+|-- summaries-<N>.docx
+|-- selected-red-*.jsonl                 # optional working selection
+`-- downloads/
+    |-- red/
+    |   |-- red_selection.jsonl           # optional
+    |   `-- NN. <sanitized-title>.pdf
+    `-- unred/
+        `-- NN. <sanitized-title>.pdf
+```
+
+The five-author workspace currently observed by this skill uses these variants:
+
+| Author | Download layout | Notes |
+| --- | --- | --- |
+| `changle-li` | PDFs under `downloads\unred` | `red` may exist but be empty |
+| `jiandong-li` | PDFs under `downloads\unred` | `red` may exist but be empty |
+| `min-sheng` | PDFs split between `downloads\red` and `downloads\unred` | `red` may also contain `red_selection.jsonl`, `docx`, `docx-zh`, and `work` support directories |
+| `nan-cheng` | PDFs split between `downloads\red` and `downloads\unred` | `red` may contain `red_selection.jsonl` |
+| `qingqi-pei` | PDFs under `downloads\unred` | `red` may exist but be empty |
+
+Only top-level PDFs in `downloads\red` and `downloads\unred` are paper files.
+Do not rename or classify files inside auxiliary directories such as `docx`,
+`docx-zh`, or `work`.
+
+Use the summary number as the stable filename prefix:
+
+```text
+NN. <original-download-name>.pdf
+```
+
+`NN` is the paper's number in that author's `summaries-<N>.docx`, normally
+zero-padded to two digits. It is not a new sequential index. Numbering gaps
+are valid after cross-author duplicate removal and must not be closed by
+renumbering the remaining files. Do not add a number when no matching summary
+entry exists; report the mismatch instead.
+
+## Soft Red-Mark Extraction
+
+Red-mark extraction should be resilient to DOCX rendering differences. Treat
+explicit title formatting as strong evidence and annotations as supporting
+evidence, but never classify a paper as red because its abstract or summary
+body contains unrelated inline red text.
+
+1. Parse paragraphs rather than flat document text.
+2. Find an entry title matching `^(\d{1,2})\.\s+(.+)$`. Accept only numbers in
+   the requested summary range, normally `1..N`.
+3. Confirm the entry by locating its nearby metadata paragraph, normally
+   `YYYY | <venue> | ieee:<record-id> | ...`. This anchor prevents matching
+   numbered prose inside a summary.
+4. Inspect only the leading number/title run or the title paragraph properties.
+   Prefer `w:highlight`/equivalent red highlighting, then a red or dark-red
+   font color, then a red paragraph shade.
+5. Treat text such as `（重要、先看）` as supporting evidence, not as the sole
+   reason for a hard red classification.
+6. Ignore red runs after `摘要总结：`, inline technical terms, and other body
+   emphasis.
+
+Recommended confidence levels:
+
+| Confidence | Evidence |
+| --- | --- |
+| `high` | Red highlight or red title-prefix color is present on the numbered title entry |
+| `medium` | A title annotation is present, or several weak title-level signals agree, but no explicit red title formatting exists |
+| `low` | Only body text is red, or title style is ambiguous; report as a candidate and require inspection |
+| `none` | No title-level red evidence |
+
+If `selected-red-*.jsonl` or `downloads\red\red_selection.jsonl` exists, use it
+as a supporting script-generated selection record. If it disagrees with
+explicit title-level DOCX formatting, report both signals rather than silently
+overwriting the selection.
+
+When a scripted red-selection file is emitted, prefer a stable JSONL schema:
+
+```json
+{"record_id":"ieee:12345678","summary_number":6,"title":"Paper title","is_red":true,"confidence":"high","evidence":["title_highlight_red"]}
+```
+
+Route a PDF to `downloads\red` only when the paper is selected by explicit
+red evidence or by an inspected medium-confidence candidate. Otherwise place
+it in `downloads\unred`. For cross-author duplicates, retain the red copy when
+available; when both copies are non-red, use one deterministic author order
+and document that choice.
+
 ## Workflow
 
 1. Run `auth-check` and stop for human login when the session is invalid.

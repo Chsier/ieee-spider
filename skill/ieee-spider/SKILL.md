@@ -57,6 +57,9 @@ summaries.
 Read [references/author-collection.md](references/author-collection.md) and
 prefer `scripts\select_author_papers.py` for this branch.
 
+That reference also records the observed per-author library layout and a soft
+method for extracting red-marked papers from `summaries-<N>.docx`.
+
 When asked what the skill supports, explicitly mention the per-author
 collection workflow, not only generic search and download.
 
