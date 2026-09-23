@@ -68,7 +68,46 @@ def test_auth_check_trusts_user_cookie_when_hidden_sign_in_markup_exists() -> No
     )
 
     assert authenticated is True
-    assert "user session cookie" in message
+    assert "live IEEE page" in message
+
+
+def test_auth_check_requires_live_confirmation_for_unblocked_cookie_only_session() -> None:
+    state = {
+        "cookies": [
+            {"name": "xpluserinfo", "value": "saved-user"},
+            {"name": "ERIGHTS", "value": "saved-entitlement"},
+        ]
+    }
+
+    authenticated, message = _evaluate_auth(
+        state,
+        http_status=200,
+        title="IEEE Xplore",
+        text="",
+    )
+
+    assert authenticated is False
+    assert "did not confirm" in message
+
+
+def test_auth_check_rejects_stale_cookies_when_live_page_requires_sign_in() -> None:
+    state = {
+        "cookies": [
+            {"name": "xpluserinfo", "value": "saved-user"},
+            {"name": "ERIGHTS", "value": "saved-entitlement"},
+            {"name": "SDR1", "value": "saved-institution"},
+        ]
+    }
+
+    authenticated, message = _evaluate_auth(
+        state,
+        http_status=200,
+        title="IEEE Xplore",
+        text="personal sign in institutional sign in",
+    )
+
+    assert authenticated is False
+    assert "stale" in message
 
 
 def test_auth_check_rejects_generic_session_without_user_cookie() -> None:

@@ -1,4 +1,4 @@
 interface:
   display_name: "IEEE Spider"
   short_description: "IEEE collections, citation stats, DOCX summaries"
-  default_prompt: "Use $ieee-spider through its embedded scripts/ieee-spider.ps1 runtime for IEEE Xplore search, per-author collections, manifest-driven downloads, serial enrichment, citation statistics, and DOCX summaries. Require a human to complete the initial login; never run parallel IEEE browser pages, fall back to another metadata source, or use a proxy."
+  default_prompt: "Use $ieee-spider through its embedded scripts/ieee-spider.ps1 runtime for IEEE Xplore search, per-author collections, manifest-driven downloads, serial enrichment, citation statistics, and DOCX summaries. Require a human to complete the initial login and require live session confirmation; stop the batch on sign-in or stale-session failures. Never run parallel IEEE browser pages, fall back to another metadata source, or use a proxy."

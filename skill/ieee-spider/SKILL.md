@@ -96,6 +96,14 @@ login. Continue only when `auth-check` reports `authenticated: true` and the
 live IEEE page does not still show `Personal Sign In` or
 `Institutional Sign In`.
 
+Saved `xpluserinfo`, `ERIGHTS`, or `SDR1` cookies are also not sufficient by
+themselves. They can remain in storage after IEEE invalidates the server-side
+session. For a normal HTTP 200 page, require live confirmation such as
+`Sign Out` or account settings. If the live page shows a sign-in prompt, treat
+the session as expired even when those cookies are present. The saved-cookie
+fallback is valid only when IEEE blocks the live check with HTTP 403, 418, or
+429.
+
 ## Operating Boundaries and Defaults
 
 ### Preserve These Boundaries
@@ -157,6 +165,9 @@ must remain script-generated and internally consistent.
 
 2. Continue only when the output contains `authenticated: true`.
 
+   After a new human login, run `auth-check` again in a separate process
+   before starting collection. Both checks must report `authenticated: true`.
+
 3. Run a generic authenticated Xplore search:
 
    ```powershell
@@ -213,6 +224,12 @@ must remain script-generated and internally consistent.
 
 8. Report the counts and failed records from
    `downloads\download_manifest.jsonl`.
+
+If an authorized download unexpectedly reports `No PDF access for this
+account` after a successful session check, stop the batch. Re-run
+`auth-check`; if it is false or the live page shows a sign-in prompt, request
+another human login. Do not classify stale-session failures as a permanent
+entitlement result and do not retry the full batch.
 
 `download` is best-effort for links exposed by the basic page parser. For IEEE
 records it follows the standard search-result `stamp.jsp` link, resolves the

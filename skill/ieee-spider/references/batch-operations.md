@@ -149,10 +149,17 @@ For authentication failure:
    or anonymous IEEE page.
 3. Resume the same job after login; do not recreate the manifest.
 
-`WLSESSION` can exist for an anonymous IEEE page. It must not be treated as a
-completed institutional login without `xpluserinfo`, `ERIGHTS`/`SDR1`, or a
-live authenticated page that no longer shows `Personal Sign In` or
+`WLSESSION` can exist for an anonymous IEEE page. It is not proof of a
+completed institutional login. `xpluserinfo`, `ERIGHTS`, and `SDR1` can also
+remain in saved storage after IEEE invalidates the server-side session, so
+they must not override a live page that still shows `Personal Sign In` or
 `Institutional Sign In`.
+
+For HTTP 200, require live authenticated-page confirmation. Trust the saved
+cookie fallback only when IEEE blocks the live check with HTTP 403, 418, or
+429. A batch that suddenly returns `No PDF access for this account` for many
+records is not evidence that every entitlement disappeared; stop and rerun
+`auth-check` before resuming.
 
 Saved storage state is loaded into the persistent browser before navigation.
 If a later `auth-check` fails, it must not replace the saved state with the

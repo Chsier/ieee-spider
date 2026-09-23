@@ -148,6 +148,13 @@ Successful authentication requires:
 authenticated: true
 ```
 
+For normal HTTP 200 pages, `login` and `auth-check` require confirmation from
+the live IEEE page. Saved `xpluserinfo`, `ERIGHTS`, or `SDR1` values do not
+override a page that still shows `Personal Sign In` or
+`Institutional Sign In`; those values can remain in storage after the server
+has invalidated the session. The saved-cookie fallback is used only when IEEE
+blocks automation with HTTP 403, 418, or 429.
+
 The saved session is stored under `data/auth/`, which is ignored by Git. The
 tool does not persist passwords. Form automation is optional and reads a
 password only from the environment variable selected by `password_env`.

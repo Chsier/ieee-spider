@@ -119,7 +119,11 @@ def login(
             print("Complete the IEEE or institutional SSO sign-in in the browser.")
         print("MFA and CAPTCHA are intentionally left to the user.")
         input("Press Enter here after the authenticated IEEE page is visible... ")
-        status = refresh_session(page, context, login_config)
+        status = _wait_for_login_confirmation(
+            page,
+            context,
+            login_config,
+        )
         if login_config.keep_open:
             print("Browser kept open. Close the browser window to exit login.")
             try:
@@ -381,14 +385,26 @@ def _evaluate_auth(
             "Saved IEEE cookies are present; the live page was blocked by "
             f"anti-automation HTTP {http_status or 'unknown'}.",
         )
-    if has_user_cookie:
-        return True, "Saved IEEE user session cookie is present."
-    if has_entitlement_cookie:
-        return True, "Saved IEEE entitlement session cookie is present."
-    if negative:
-        return False, "IEEE page shows a sign-in prompt."
+    if negative and not positive:
+        return (
+            False,
+            "IEEE live page shows a sign-in prompt; saved session cookies "
+            "are stale.",
+        )
     if positive:
-        return True, "Session appears authenticated in the live page."
+        return True, "Session is confirmed by the live IEEE page."
+    if has_user_cookie:
+        return (
+            False,
+            "Saved IEEE user session cookie is present, but the live page "
+            "did not confirm authentication.",
+        )
+    if has_entitlement_cookie:
+        return (
+            False,
+            "Saved IEEE entitlement cookie is present, but the live page "
+            "did not confirm authentication.",
+        )
     if has_generic_session:
         return (
             False,
@@ -396,3 +412,18 @@ def _evaluate_auth(
             "institutional sign-in was not completed.",
         )
     return False, "No authenticated IEEE session cookie was found."
+
+
+def _wait_for_login_confirmation(
+    page: object,
+    context: object,
+    config: LoginConfig,
+    *,
+    timeout_seconds: int = 45,
+) -> AuthStatus:
+    deadline = time.monotonic() + timeout_seconds
+    status = refresh_session(page, context, config)
+    while not status.authenticated and time.monotonic() < deadline:
+        time.sleep(2)
+        status = refresh_session(page, context, config)
+    return status

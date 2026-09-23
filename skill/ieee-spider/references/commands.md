@@ -27,11 +27,13 @@ Do not run these unless the user explicitly says a human is present and ready:
 it owns the single browser profile for its entire lifetime.
 
 After the human presses Enter, `login` rechecks the live IEEE page and reports
-the actual authentication result instead of assuming success. A generic
-`WLSESSION` cookie does not represent a completed institutional login.
-Saved cookies and localStorage are injected into subsequent persistent
-browser launches. A failed `auth-check` must not overwrite the saved session
-file.
+the actual authentication result instead of assuming success. It waits for
+live confirmation rather than accepting stale saved cookies. A generic
+`WLSESSION` cookie does not represent a completed institutional login, and
+saved `xpluserinfo`, `ERIGHTS`, or `SDR1` values do not override a live
+sign-in page. Saved cookies and localStorage are injected into subsequent
+persistent browser launches. A failed `auth-check` must not overwrite the
+saved session file.
 
 To reset stale authentication state safely, stop all browser commands and move
 `data\auth` to a timestamped quarantine directory. Run `auth-check` before
@@ -49,8 +51,10 @@ Agent task. Having
 ```
 
 Continue only when `authenticated: true`. The command may use the saved
-`xpluserinfo`, `ERIGHTS`, `WLSESSION`, and IdP cookies when IEEE blocks
-automation with HTTP 418.
+`xpluserinfo`, `ERIGHTS`, `WLSESSION`, and IdP cookies only when IEEE blocks
+the live check with HTTP 403, 418, or 429. For HTTP 200, the live page must
+confirm the session and must not show `Personal Sign In` or
+`Institutional Sign In`.
 
 ## Generic Search
 
@@ -145,6 +149,11 @@ authenticated request context. They do not navigate the off-screen browser into
 the PDF viewer. Download manifests merge by `record_id` across invocations, so
 partial or resume batches retain previous records and never require hand
 editing.
+
+If a batch starts returning `No PDF access for this account` immediately
+across many records, stop instead of continuing. Run `auth-check`; a stale
+session can preserve old authentication cookies while IEEE has already
+invalidated access. Resume only after a new live-confirmed login check.
 
 Select specific records:
 
