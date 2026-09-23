@@ -1,6 +1,6 @@
 ---
 name: ieee-spider
-description: Maintain an authenticated IEEE Xplore browser channel and provide basic searches, fixed manifests, serial abstract/citation enrichment, reusable venue statistics, and best-effort authorized or open-access PDF downloads. Use when an Agent needs IEEE access after human login; complex dynamic page scraping remains Agent work. Never use metadata-source fallback or proxies.
+description: Maintain an authenticated IEEE Xplore browser channel and provide basic searches, fixed manifests, serial abstract/citation enrichment, reusable venue statistics, and best-effort authorized or open-access PDF downloads. Use when an Agent needs IEEE access after human login; complex dynamic page scraping remains Agent work. Never use metadata-source fallback; network access is direct unless a user explicitly selects a per-record PDF proxy.
 ---
 
 # IEEE Spider
@@ -69,7 +69,7 @@ This skill provides a stable authenticated channel and basic commands, not a
 complete implementation of every IEEE page workflow. Search-result parsing,
 abstract enrichment, and download-link extraction are intentionally limited.
 If IEEE changes a dynamic detail page, an Agent may compose additional scraping
-logic in the project while preserving the login, single-process, no-proxy,
+logic in the project while preserving the login, single-process, default-direct,
 serial-detail, and fixed-manifest contracts.
 
 The documented commands, selectors, scripts, and browser flow are strong
@@ -112,7 +112,10 @@ fallback is valid only when IEEE blocks the live check with HTTP 403, 418, or
   Agent does not create the session, fill credentials, or handle MFA.
 - Keep authenticated collection inside IEEE Xplore. Do not substitute
   OpenAlex, Crossref, or another metadata source.
-- Never add or enable an HTTP proxy.
+- Keep ambient/system/environment proxies disabled. Login, search, enrichment,
+  and session access must remain direct. Only an explicit
+  `--proxy-record RECORD_ID=PROXY_URL` may route that record's PDF requests
+  through a user-supplied proxy.
 - Keep authenticated browser work serial unless a replacement implementation
   has been tested to provide equivalent throttling and profile-lock safety.
 - Do not hand-edit generated search manifests or download manifests. Change
@@ -139,6 +142,9 @@ changes.
 - Authorized downloads default to a 4-second delay between records, a
   60-second cooldown after throttling, and at most 2 attempts per record.
   Preserve these defaults unless testing demonstrates a safer rate.
+- PDF transfer timeout is 180 seconds. Large authorized PDFs can require more
+  than 60 seconds even on a healthy direct connection; do not lower the timeout
+  merely to fail faster.
 - If the profile is reported in use, diagnose the owner before changing
   strategy. Wait for a transient Agent command to exit. If a human-controlled
   `session` owns the profile, ask the human to stop it.
@@ -222,6 +228,17 @@ must remain script-generated and internally consistent.
     --max-attempts 2
   ```
 
+   Record-specific proxies are optional. With no rule, every request remains
+   direct:
+
+   ```powershell
+   & $ieeeSpider download `
+     --input data\jobs\<job-name>\manifest.jsonl `
+     --mode authorized `
+     --record-id "ieee:11022699" `
+     --proxy-record "ieee:11022699=http://127.0.0.1:7897"
+   ```
+
 8. Report the counts and failed records from
    `downloads\download_manifest.jsonl`.
 
@@ -275,8 +292,8 @@ If another process already owns the profile, the CLI reports that the profile
 is in use instead of opening a second browser.
 
 When authentication is actually lost, stop the authenticated collection and
-request another human login. Do not retry through another metadata source or a
-proxy.
+request another human login. Do not retry through another metadata source or
+route authentication through a proxy.
 
 ## Hidden Dependencies
 

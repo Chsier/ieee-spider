@@ -26,7 +26,7 @@ from ieee_spider.downloads import (
 from ieee_spider.enrichment import AuthRequiredError, enrich_manifest
 from ieee_spider.exporters import export_all, read_jsonl
 from ieee_spider.manifest import manifest_records_to_works, read_search_manifest
-from ieee_spider.models import SearchQuery, merge_works
+from ieee_spider.models import SearchQuery, Work, merge_works
 from ieee_spider.xplore import XploreBrowserSearch
 
 
@@ -204,6 +204,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=_positive_int,
         default=2,
     )
+    download_parser.add_argument(
+        "--proxy-record",
+        action="append",
+        type=_proxy_record,
+        default=[],
+        metavar="RECORD_ID=PROXY_URL",
+        help=(
+            "Use a proxy only for this record's PDF link. Repeat for "
+            "multiple records; records without a rule remain direct."
+        ),
+    )
     download_parser.add_argument("--overwrite", action="store_true")
     download_parser.add_argument("--dry-run", action="store_true")
     return parser
@@ -357,6 +368,7 @@ def _download(args: argparse.Namespace) -> None:
         mode=args.mode,
         limit=args.limit,
     )
+    proxy_by_record = dict(args.proxy_record)
 
     if args.dry_run:
         for work in works:
@@ -376,47 +388,60 @@ def _download(args: argparse.Namespace) -> None:
                 args.output_dir,
                 overwrite=args.overwrite,
                 workers=args.workers,
+                proxy_by_record=proxy_by_record,
             )
         )
     if args.mode in {"authorized", "both"}:
         login_config = _resolve_login_config(args, config_attr="login_config")
-        with AuthorizedPdfDownloader(
-            config=login_config,
-        ) as downloader:
-            for index, work in enumerate(works, 1):
-                label = work.record_id or work.doi or work.title
-                item = None
-                for attempt in range(1, args.max_attempts + 1):
-                    print(
-                        f"[{index}/{len(works)}] downloading {label} "
-                        f"(attempt {attempt}/{args.max_attempts})",
-                        flush=True,
-                    )
-                    item = downloader.download(
-                        work,
-                        args.output_dir,
-                        overwrite=args.overwrite,
-                    )
-                    if item.status != "failed" or not _retryable_download_failure(
-                        item.message
-                    ):
-                        break
-                    if attempt < args.max_attempts:
-                        cooldown = _download_retry_cooldown(
-                            item.message,
-                            args.throttle_cooldown_seconds,
-                        )
+        authorized_groups: dict[str, list[tuple[int, Work]]] = {}
+        for index, work in enumerate(works, 1):
+            proxy_url = proxy_by_record.get(work.record_id or "", "")
+            authorized_groups.setdefault(proxy_url, []).append((index, work))
+
+        for proxy_url, indexed_works in authorized_groups.items():
+            group_config = replace(
+                login_config,
+                proxy_url=proxy_url,
+            )
+            with AuthorizedPdfDownloader(config=group_config) as downloader:
+                for index, work in indexed_works:
+                    label = work.record_id or work.doi or work.title
+                    item = None
+                    for attempt in range(1, args.max_attempts + 1):
                         print(
-                            f"[{index}/{len(works)}] retryable failure; "
-                            f"cooling down {cooldown:.0f}s",
+                            f"[{index}/{len(works)}] downloading {label} "
+                            f"(attempt {attempt}/{args.max_attempts})",
                             flush=True,
                         )
-                        time.sleep(cooldown)
-                results.append(item)
-                write_download_manifest(results, args.output_dir)
-                print(f"[{index}/{len(works)}] {item.status}", flush=True)
-                if index < len(works):
-                    time.sleep(args.delay_seconds)
+                        item = downloader.download(
+                            work,
+                            args.output_dir,
+                            overwrite=args.overwrite,
+                        )
+                        if (
+                            item.status != "failed"
+                            or not _retryable_download_failure(item.message)
+                        ):
+                            break
+                        if attempt < args.max_attempts:
+                            cooldown = _download_retry_cooldown(
+                                item.message,
+                                args.throttle_cooldown_seconds,
+                            )
+                            print(
+                                f"[{index}/{len(works)}] retryable failure; "
+                                f"cooling down {cooldown:.0f}s",
+                                flush=True,
+                            )
+                            time.sleep(cooldown)
+                    results.append(item)
+                    write_download_manifest(results, args.output_dir)
+                    print(
+                        f"[{index}/{len(works)}] {item.status}",
+                        flush=True,
+                    )
+                    if index < len(works):
+                        time.sleep(args.delay_seconds)
     manifest = write_download_manifest(results, args.output_dir)
     counts = {
         status: sum(item.status == status for item in results)
@@ -536,6 +561,17 @@ def _download_retry_cooldown(
     ):
         return configured_cooldown
     return min(configured_cooldown, 5.0)
+
+
+def _proxy_record(value: str) -> tuple[str, str]:
+    record_id, separator, proxy_url = value.partition("=")
+    record_id = record_id.strip()
+    proxy_url = proxy_url.strip()
+    if not separator or not record_id or not proxy_url:
+        raise argparse.ArgumentTypeError(
+            "must use RECORD_ID=PROXY_URL"
+        )
+    return record_id, proxy_url
 
 
 def _non_negative_float(value: str) -> float:

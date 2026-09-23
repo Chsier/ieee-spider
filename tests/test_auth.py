@@ -182,3 +182,33 @@ def test_persistent_context_loads_saved_storage_state(tmp_path: Path) -> None:
 
     assert captured["cookies"] == [{"name": "session", "value": "saved"}]
     assert "https://example.org" in str(captured["script"])
+
+
+def test_persistent_context_uses_explicit_proxy_without_direct_flag(
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class Context:
+        @staticmethod
+        def add_cookies(cookies: object) -> None:
+            return None
+
+    class Chromium:
+        @staticmethod
+        def launch_persistent_context(**kwargs: object) -> object:
+            captured.update(kwargs)
+            return Context()
+
+    playwright = SimpleNamespace(chromium=Chromium())
+
+    launch_persistent_context(
+        playwright,
+        LoginConfig(
+            auth_file=tmp_path / "state.json",
+            proxy_url="http://127.0.0.1:7897",
+        ),
+    )
+
+    assert captured["proxy"] == {"server": "http://127.0.0.1:7897"}
+    assert "--no-proxy-server" not in captured["args"]

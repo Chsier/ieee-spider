@@ -64,6 +64,7 @@ The CLI defaults are:
 - 60-second cooldown after throttling
 - 5-second cooldown after a connection timeout or reset
 - at most 2 attempts per record
+- 180-second PDF transfer timeout
 
 Observed behavior: after roughly 12-15 rapid detail-page requests, IEEE may
 return `ERR_HTTP_RESPONSE_CODE_FAILURE` even while `auth-check` remains true.
@@ -74,6 +75,10 @@ of access.
 IEEE may expose the nested iframe as `stampPDF/getPDF.jsp?...` rather than a
 URL ending in `.pdf`. Parse any PDF-identifying iframe source and validate the
 final response by its `%PDF-` header; do not require a `.pdf` suffix.
+
+The nested PDF response can be a legitimate multi-megabyte file that takes
+more than 60 seconds to transfer. A timeout is not evidence that entitlement
+is absent; the default 180-second window is intentional.
 
 ## Serial Abstract Enrichment
 
@@ -138,7 +143,9 @@ For throttling:
 2. Keep the authenticated browser session and retry the failed records in
    small serial batches after a 45-to-60-second cooldown.
 3. Preserve successful enrichment records and resume from the output JSONL.
-4. Never use a proxy, alternate metadata source, or automatic login.
+4. Never use an alternate metadata source or automatic login. Only an
+   explicit per-record PDF proxy rule may opt that link into a user-supplied
+   proxy; authentication remains direct.
 
 For authentication failure:
 

@@ -3,6 +3,10 @@ url = "https://ieeexplore.ieee.org/"
 browser = "edge"
 auth_file = "data/auth/ieee-storage-state.json"
 
+# Leave empty for direct access. Per-record PDF proxy rules are passed to the
+# download command with --proxy-record and do not change login or search.
+proxy_url = ""
+
 # Recommended: complete institutional SSO, username/password and MFA in the
 # visible browser, then press Enter in the terminal.
 mode = "manual"

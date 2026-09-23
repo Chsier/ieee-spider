@@ -20,6 +20,8 @@ from ieee_spider.models import Work
 
 
 MAX_PDF_BYTES = 100 * 1024 * 1024
+PDF_REQUEST_TIMEOUT_SECONDS = 180.0
+PDF_REQUEST_TIMEOUT_MS = int(PDF_REQUEST_TIMEOUT_SECONDS * 1_000)
 _IFRAME_PDF_RE = re.compile(
     r"""<iframe[^>]+src=["']([^"']*pdf[^"']*)["']""",
     re.IGNORECASE,
@@ -59,7 +61,13 @@ def select_download_works(
     return selected
 
 
-def download_oa(work: Work, output_dir: Path, *, overwrite: bool = False) -> DownloadResult:
+def download_oa(
+    work: Work,
+    output_dir: Path,
+    *,
+    overwrite: bool = False,
+    proxy_url: str | None = None,
+) -> DownloadResult:
     if not work.pdf_url:
         return _result(work, "oa", "skipped", None, "No OA PDF URL")
     destination = pdf_path(output_dir, work)
@@ -75,8 +83,9 @@ def download_oa(work: Work, output_dir: Path, *, overwrite: bool = False) -> Dow
     try:
         with httpx.Client(
             follow_redirects=True,
-            timeout=60.0,
+            timeout=PDF_REQUEST_TIMEOUT_SECONDS,
             trust_env=False,
+            proxy=proxy_url or None,
             headers={"User-Agent": "ieee-spider/0.1"},
         ) as client:
             prefix, total = _download_http_pdf(
@@ -106,10 +115,12 @@ def download_oa_many(
     *,
     overwrite: bool = False,
     workers: int = 3,
+    proxy_by_record: dict[str, str] | None = None,
 ) -> list[DownloadResult]:
     if not works:
         return []
     bounded_workers = min(max(1, workers), 5)
+    proxies = proxy_by_record or {}
     results: list[DownloadResult | None] = [None] * len(works)
     with ThreadPoolExecutor(max_workers=bounded_workers) as executor:
         futures = {
@@ -118,6 +129,9 @@ def download_oa_many(
                 work,
                 output_dir,
                 overwrite=overwrite,
+                proxy_url=(
+                    proxies.get(work.record_id or "") or None
+                ),
             ): index
             for index, work in enumerate(works)
         }
@@ -179,10 +193,9 @@ class AuthorizedPdfDownloader:
         if destination.exists() and not overwrite:
             return _result(work, "authorized", "skipped", destination, "File exists")
 
-        if "stamp.jsp" not in (work.authorized_pdf_url or "").casefold():
-            direct_result = self._try_direct_pdf_url(work, destination)
-            if direct_result is not None:
-                return direct_result
+        direct_result = self._try_direct_pdf_url(work, destination)
+        if direct_result is not None:
+            return direct_result
 
         landing_url = work.landing_page_url
         if not landing_url and work.doi:
@@ -266,7 +279,7 @@ class AuthorizedPdfDownloader:
                         "search/searchresult.jsp"
                     )
                 },
-                timeout=60_000,
+                timeout=PDF_REQUEST_TIMEOUT_MS,
             )
             content = response.body()
             if (
@@ -292,7 +305,7 @@ class AuthorizedPdfDownloader:
                     nested = self._context.request.get(
                         nested_pdf_url,
                         headers={"Referer": work.authorized_pdf_url},
-                        timeout=60_000,
+                        timeout=PDF_REQUEST_TIMEOUT_MS,
                     )
                     nested_content = nested.body()
                     if (
@@ -320,7 +333,10 @@ class AuthorizedPdfDownloader:
         if not self._context:
             return False
         try:
-            response = self._context.request.get(url, timeout=60_000)
+            response = self._context.request.get(
+                url,
+                timeout=PDF_REQUEST_TIMEOUT_MS,
+            )
             content = response.body()
             if (
                 response.status == 200
@@ -340,7 +356,7 @@ class AuthorizedPdfDownloader:
                     nested = self._context.request.get(
                         nested_pdf_url,
                         headers={"Referer": url},
-                        timeout=60_000,
+                        timeout=PDF_REQUEST_TIMEOUT_MS,
                     )
                     nested_content = nested.body()
                     if (
@@ -416,7 +432,7 @@ def _download_http_pdf(
     url: str,
     destination: Path,
 ) -> tuple[bytes, int]:
-    response = client.get(url, timeout=60.0)
+    response = client.get(url, timeout=PDF_REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
     content = response.content
     if content.startswith(b"%PDF"):
@@ -440,7 +456,7 @@ def _download_http_pdf(
         "GET",
         nested_pdf_url,
         headers={"Referer": url},
-        timeout=60.0,
+        timeout=PDF_REQUEST_TIMEOUT_SECONDS,
     ) as nested:
         nested.raise_for_status()
         with destination.open("wb") as handle:

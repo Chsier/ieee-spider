@@ -1,12 +1,12 @@
 {
   "executable": {
     "filename": "ieee-spider.exe",
-    "sha256": "07f774ae210683cc61dd7526b8f5a96e29c9eb2163ba469e1d860b1cd63bb1b9",
-    "size_bytes": 44286976
+    "sha256": "fbe3d094c1903227fb789ad5b3ae1d98ba83aeeb8c30fe9c0854c9562f746ddc",
+    "size_bytes": 44278272
   },
   "nuitka_version": "4.1.3",
   "playwright_version": "1.62.0",
   "python_version": "3.12.12",
-  "runtime_version": "0.2.1",
+  "runtime_version": "0.2.2",
   "schema": "ieee-spider/runtime-package/v1"
 }

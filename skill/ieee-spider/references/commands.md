@@ -137,7 +137,8 @@ Open access plus authorized access:
 `--workers` is limited to `1-5`; default is `3`. Authorized browser downloads
 remain serial. Their defaults are a 4-second delay between records, a
 60-second cooldown after a throttling failure, and at most 2 attempts per
-record. These delays protect the single authenticated browser session and may
+record. PDF transfer timeout is 180 seconds to accommodate large authorized
+files. These delays protect the single authenticated browser session and may
 be lengthened when IEEE reports throttling.
 
 `--workers` applies only to open-access HTTP PDF downloads. Do not use it for
@@ -149,6 +150,21 @@ authenticated request context. They do not navigate the off-screen browser into
 the PDF viewer. Download manifests merge by `record_id` across invocations, so
 partial or resume batches retain previous records and never require hand
 editing.
+
+Proxy routing is explicit per record and direct by default:
+
+```powershell
+& $ieeeSpider download `
+  --input data\jobs\low-altitude\manifest.jsonl `
+  --record-id "ieee:11022699" `
+  --mode authorized `
+  --proxy-record "ieee:11022699=http://127.0.0.1:7897"
+```
+
+`--proxy-record` may be repeated. Records without a rule remain direct.
+Login, search, enrichment, auth-check, and session commands do not consume
+these rules. If an explicitly proxied request is rejected by IEEE, retry that
+record without the rule instead of routing authentication through the proxy.
 
 If a batch starts returning `No PDF access for this account` immediately
 across many records, stop instead of continuing. Run `auth-check`; a stale
@@ -180,7 +196,8 @@ Preview without downloading:
 - Exit code `2`: validation, authentication, or runtime error.
 - Missing or invalid browser session: stop and request human `login`.
 - Never retry an authentication failure through OpenAlex, Crossref, a proxy,
-  or a headless substitute.
+  or a headless substitute. A valid per-record PDF proxy rule is not an
+  authentication workaround.
 
 ## Rate-Limited Abstract Enrichment
 

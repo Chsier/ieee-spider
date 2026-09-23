@@ -2,6 +2,7 @@
 url = "https://ieeexplore.ieee.org/"
 browser = "edge"
 auth_file = "data/auth/ieee-storage-state.json"
+proxy_url = ""
 mode = "manual"
 username = ""
 username_env = "IEEE_USERNAME"

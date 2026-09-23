@@ -26,6 +26,7 @@ class LoginConfig:
     url: str = IEEE_HOME
     browser: str = "edge"
     auth_file: Path = DEFAULT_AUTH_FILE
+    proxy_url: str = ""
     mode: str = "manual"
     username: str = ""
     username_env: str = "IEEE_USERNAME"
@@ -75,6 +76,7 @@ def load_login_config(
         url=str(payload.get("url", IEEE_HOME)),
         browser=str(payload.get("browser", "edge")).casefold(),
         auth_file=auth_file.resolve(),
+        proxy_url=str(payload.get("proxy_url", "")).strip(),
         mode=mode,
         username=str(payload.get("username", "")),
         username_env=str(payload.get("username_env", "IEEE_USERNAME")),
@@ -252,7 +254,9 @@ def launch_persistent_context(
     *,
     background: bool = True,
 ) -> object:
-    args = list(NO_PROXY_ARGS)
+    args: list[str] = []
+    if not config.proxy_url:
+        args.extend(NO_PROXY_ARGS)
     if background:
         args.extend(BACKGROUND_ARGS)
     try:
@@ -263,6 +267,8 @@ def launch_persistent_context(
             "accept_downloads": True,
             "args": args,
         }
+        if config.proxy_url:
+            options["proxy"] = {"server": config.proxy_url}
         context = playwright.chromium.launch_persistent_context(
             **options,
         )
